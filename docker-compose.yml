@@ -4,26 +4,50 @@ services:
   explorer:
     build:
       dockerfile: Dockerfile
-      context: .
+      context: ./back-end-monolith
       target: final
     restart: on-failure
     networks:
-      - database
+      - network-monolith
     ports:
       - "8086:80"
     environment:
       DATABASE_HOST: database
-      DATABASE_PORT: 5432
+      DATABASE_PORT: 5432  # Ensure correct port here
       DATABASE_PASSWORD: super
       DATABASE_USER: postgres
       DATABASE_SCHEMA: explorer
     depends_on:
       - database
+
+  go-blog-microservice:
+    build:
+      dockerfile: Dockerfile
+      context: ./blog-microservice/src
+    networks:
+      - network-blog
+    ports:
+      - "8082:8082"
+    depends_on:
+      - go-blog-database
+
+  go-tours-microservice:
+    build:
+      dockerfile: Dockerfile
+      context: ./tours-microservice/src
+    image: tours-microservice
+    networks:
+      - network-tours
+    ports:
+      - "8081:8081"
+    depends_on:
+      - go-tours-database      
+
   database:
     image: postgres:13
     restart: always
     networks:
-      - database
+      - network-monolith
     environment:
       POSTGRES_PASSWORD: super
       POSTGRES_USER: postgres
@@ -36,13 +60,51 @@ services:
         source: explorer-init-data.sql
         target: /tmp/explorer-init.sql
     ports:
-      - "5432:5432"
+      - "5432:5432"  # Expose port 5432
+
+  go-blog-database:
+    image: postgres:13
+    restart: always
+    networks:
+      - network-blog
+    environment:
+      POSTGRES_PASSWORD: super
+      POSTGRES_USER: postgres
+      POSTGRES_DB: explorer-blog
+    volumes:
+      - go-blog-database-data:/var/lib/postgresql/data
+    ports:
+      - "5434:5432"  # Expose port 5434
+
+  go-tours-database:
+    image: postgres:13
+    restart: always
+    networks:
+      - network-tours
+    environment:
+      POSTGRES_PASSWORD: super
+      POSTGRES_USER: postgres
+      POSTGRES_DB: explorer-tours
+    volumes:
+      - go-tours-database-data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"  # Expose port 5434
 
 volumes:
   database-data:
     name: explorer
+  go-blog-database-data:
+    name: explorerblog
+  go-tours-database-data:
+    name: explorertours
 
 networks:
-  database:
-    name: database
+  network-monolith:
+    name: network-monolith
+    driver: bridge
+  network-blog:
+    name: network-blog
+    driver: bridge
+  network-tours:
+    name: network-tours
     driver: bridge
