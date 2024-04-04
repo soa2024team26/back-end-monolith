@@ -60,7 +60,7 @@ namespace Explorer.API.Controllers.Administrator
             {
                 var file = Request.Form.Files[0];
                 string fName = file.FileName;
-                string path = Path.Combine(_environment.ContentRootPath, "Images", fName);
+                string path = Path.Combine(_environment.ContentRootPath, "wwwroot/Images", fName);
                 using (var stream = new FileStream(path, FileMode.Create))
                 {
                     await file.CopyToAsync(stream);

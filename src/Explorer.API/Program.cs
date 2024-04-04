@@ -25,6 +25,7 @@ builder.Services.ConfigureEncountersModule();
 
 var app = builder.Build();
 
+/*
 if (app.Environment.IsDevelopment())
 {
     app.UseDeveloperExceptionPage();
@@ -35,8 +36,8 @@ else
 {
     app.UseExceptionHandler("/error");
     app.UseHsts();
-}
-app.UseStaticFiles(new StaticFileOptions
+}*/
+/*app.UseStaticFiles(new StaticFileOptions
 {
     FileProvider = new PhysicalFileProvider(
            Path.Combine(builder.Environment.ContentRootPath, "Images")),
@@ -55,7 +56,7 @@ app.UseStaticFiles(new StaticFileOptions
     FileProvider = new PhysicalFileProvider(
            Path.Combine(builder.Environment.ContentRootPath, "Images")),
     RequestPath = "/Images"
-});
+});*/
 
 app.UseRouting();
 app.UseCors(corsPolicy);
@@ -64,13 +65,13 @@ app.UseAuthorization();
 app.UseAuthorization();
 
 app.MapControllers();
-
+/*
 app.UseStaticFiles(new StaticFileOptions
 {
     FileProvider = new PhysicalFileProvider(
           Path.Combine(builder.Environment.ContentRootPath, "Images")),
     RequestPath = "/Images"
-});
+});*/
 
 app.Run();
 
