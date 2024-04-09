@@ -43,6 +43,43 @@ services:
     depends_on:
       - go-tours-database      
 
+  go-auth-microservice:
+    build:
+      dockerfile: Dockerfile
+      context: ./auth-microservice/src
+    networks:
+      - network-stakeholders
+    ports:
+      - "8084:8084"
+    depends_on:
+      - go-auth-database
+
+  go-followers-microservice:
+    build:
+      context: ./followers-microservice/src
+      dockerfile: Dockerfile
+    restart: always
+    container_name: "followers-microservice"
+    hostname: "followers-microservice"
+    networks:
+      - network-stakeholders
+    #Mapping ports
+    ports:
+      # <port_on_local>:<port_in_machine>
+      - 8083:8083
+    #Will be accessible through os.Getenv("PORT")
+    environment:
+      - PORT=8083
+      # NoSQL: environment variable holding connection URI for Neo4J database
+      # Local DB instance
+      - NEO4J_DB=bolt://neo4j:7687
+      - NEO4J_USERNAME=neo4j
+      - NEO4J_PASS=password
+    depends_on:
+      neo4j:
+        condition: service_healthy
+
+
   database:
     image: postgres:13
     restart: always
@@ -90,6 +127,49 @@ services:
     ports:
       - "5433:5432"  # Expose port 5434
 
+  go-auth-database:
+    image: postgres:13
+    restart: always
+    networks:
+      - network-stakeholders
+    environment:
+      POSTGRES_PASSWORD: super
+      POSTGRES_USER: postgres
+      POSTGRES_DB: explorer-auth
+    volumes:
+      - go-auth-database-data:/var/lib/postgresql/data
+    ports:
+      - "5435:5432"  # Expose port 5435
+
+
+  neo4j:
+    image: neo4j
+    restart: always
+    networks:
+      - network-stakeholders
+    ports:
+      # bolt
+      - "7687:7687"
+      # http
+      - "7474:7474"
+      # https
+      - "7473:7473"
+    # Docker healtcheck - checks if database is "alive"
+    healthcheck:
+      # test: [ "CMD-SHELL", "echo RETURN 1 | cypher-shell -a <NEO4J_dbms_connector_bolt_listen__address> -u <user defined username> -p <user defined password> || exit 1" ]
+      test:
+        [
+          "CMD-SHELL",
+          "echo RETURN 1 | cypher-shell -a bolt://neo4j:7687 -u neo4j -p password || exit 1",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    environment:
+      - NEO4J_AUTH=neo4j/password
+    volumes:
+      - neo4j_data:/data
+
 volumes:
   database-data:
     name: explorer
@@ -97,6 +177,10 @@ volumes:
     name: explorerblog
   go-tours-database-data:
     name: explorertours
+  go-auth-database-data:
+    name: explorerauth
+  neo4j_data:
+    name: neo4j_data
 
 networks:
   network-monolith:
@@ -108,3 +192,14 @@ networks:
   network-tours:
     name: network-tours
     driver: bridge
+  network-stakeholders:
+    name: network-stakeholders
+    driver: bridge
+  # network-auth:
+  #   name: network-auth
+  #   driver: bridge
+  # network-followers:
+  #   name: network-followers
+  #   driver: bridge
+
+  
